@@ -36,10 +36,12 @@ material.roughness = 0.5;
 
 // object
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), material);
+sphere.castShadow = true;
 
 const planeBottom = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
 planeBottom.rotation.x = Math.PI * -0.5;
 planeBottom.position.y = -0.5;
+planeBottom.receiveShadow = true;
 
 scene.add(sphere, planeBottom);
 
@@ -53,12 +55,16 @@ scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0x00fffc, 0.9);
 scene.add(directionalLight);
 directionalLight.position.set(1, 0.25, 0);
+directionalLight.castShadow = true;
 
 // debug gui
 gui.add(directionalLight, "intensity").min(0).max(3).step(0.001);
 gui.add(ambientLight, "intensity").min(0).max(3).step(0.001);
 gui.add(material, "metalness").min(0).max(1).step(0.001);
 gui.add(material, "roughness").min(0).max(1).step(0.001);
+gui.add(directionalLight.position, "x").min(0).max(1).step(0.001);
+gui.add(directionalLight.position, "y").min(0).max(1).step(0.001);
+gui.add(directionalLight.position, "z").min(0).max(1).step(0.001);
 
 // const directionalLightHelper = new THREE.DirectionalLightHelper(
 //   directionalLight,
@@ -102,7 +108,7 @@ controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
-
+renderer.shadowMap.enabled = true;
 renderer.setSize(sizes.width, sizes.height);
 
 const tick = () => {
