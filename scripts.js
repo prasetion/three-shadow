@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import GUI from "lil-gui";
+import bakedShadow from "/textures/bakedShadow.jpg";
+import simpleShadow from "/textures/simpleShadow.jpg";
 
 // canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -29,6 +31,12 @@ const sizes = {
   height: window.innerHeight,
 };
 
+const textureLoader = new THREE.TextureLoader();
+const bakedShadowTexture = textureLoader.load(bakedShadow);
+bakedShadowTexture.colorSpace = THREE.SRGBColorSpace;
+
+const simpleShadowTexture = textureLoader.load(simpleShadow);
+
 // mesh standart material
 const material = new THREE.MeshStandardMaterial();
 material.metalness = 0.5;
@@ -38,17 +46,32 @@ material.roughness = 0.5;
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), material);
 sphere.castShadow = true;
 
-const planeBottom = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), material);
+const planeBottom = new THREE.Mesh(
+  new THREE.PlaneGeometry(4, 4),
+  // new THREE.MeshBasicMaterial({ map: bakedShadowTexture })
+  material
+);
 planeBottom.rotation.x = Math.PI * -0.5;
 planeBottom.position.y = -0.5;
 planeBottom.receiveShadow = true;
 
-scene.add(sphere, planeBottom);
+const sphereShadow = new THREE.Mesh(
+  new THREE.PlaneGeometry(1.5, 1.5),
+  new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    transparent: true,
+    alphaMap: simpleShadowTexture,
+  })
+);
+sphereShadow.rotation.x = -Math.PI * 0.5;
+sphereShadow.position.y = planeBottom.position.y + 0.01;
+
+scene.add(sphere, planeBottom, sphereShadow);
 
 // ambient lighting
 const ambientLight = new THREE.AmbientLight();
 ambientLight.color = new THREE.Color(0xffffff);
-ambientLight.intensity = 0.6;
+ambientLight.intensity = 2;
 scene.add(ambientLight);
 
 // directional light
@@ -154,13 +177,27 @@ controls.enableDamping = true;
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas,
 });
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = false;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
+
+const clock = new THREE.Clock();
 
 const tick = () => {
   // update controls
   controls.update();
+
+  const elapsedTime = clock.getElapsedTime();
+
+  // Update the sphere
+  sphere.position.x = Math.cos(elapsedTime) * 1.5;
+  sphere.position.z = Math.sin(elapsedTime) * 1.5;
+  sphere.position.y = Math.abs(Math.sin(elapsedTime * 3));
+
+  // Update the shadow
+  sphereShadow.position.x = sphere.position.x;
+  sphereShadow.position.z = sphere.position.z;
+  sphereShadow.material.opacity = (1 - sphere.position.y) * 0.3;
 
   // render per frame
   renderer.render(scene, camera);
